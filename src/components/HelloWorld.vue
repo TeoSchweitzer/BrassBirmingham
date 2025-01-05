@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref, type Ref } from 'vue'
+import { onMounted, ref, type Ref } from 'vue'
 import { joinRoom, type Room } from 'trystero/firebase'
-import { selfId, type DataPayload } from 'trystero'
+import { selfId, type BaseRoomConfig, type DataPayload } from 'trystero'
 
 type Drink = DataPayload & {
     drink: string
     withIce: boolean
 }
 
-const config = { appId: 'https://brassbirminghammatchmaking-default-rtdb.europe-west1.firebasedatabase.app/' }
-let triggerSendingDrink = () => {}
-
 defineProps<{ msg: string }>()
 
+let triggerSendingDrink = () => {}
+
+const config: Ref<BaseRoomConfig | undefined> = ref(undefined)
 const knownPeers = ref(new Set<string>())
 const room: Ref<Room | undefined> = ref(undefined)
 
 function GoToRoom() {
-    room.value = joinRoom(config, 'yoyodyne')
+    room.value = joinRoom(config.value!, 'yoyodyne')
     const [sendDrink, getDrink] = room.value.makeAction('drink')
     knownPeers.value.add(selfId)
     room.value.onPeerJoin((peerId: string) => {
@@ -48,6 +48,21 @@ function checkPeers() {
     for(let prop in peers) 
         knownPeers.value.add(prop)
 }
+
+onMounted(() => {
+    // Calling the REST API TO fetch the TURN Server Credentials
+    fetch("https://brassbirminghamturn.metered.live/api/v1/turn/credentials?apiKey=71ef0fe496a35eec25b4d884748340dc4d1b")
+        .then((response) => {
+        // Saving the response in the iceServers array
+        response.json().then((iceServers) => {
+            config.value = { 
+            appId: 'https://brassbirminghammatchmaking-default-rtdb.europe-west1.firebasedatabase.app/',
+            rtcConfig: {iceServers: iceServers}
+            }
+        })
+    })
+})
+
 
 </script>
 

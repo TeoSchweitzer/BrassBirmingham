@@ -11,7 +11,7 @@ type Drink = DataPayload & {
 const config = { appId: 'https://brassbirminghammatchmaking-default-rtdb.europe-west1.firebasedatabase.app/' }
 let triggerSendingDrink = () => {}
 
-const props = defineProps<{ msg: string }>()
+defineProps<{ msg: string }>()
 
 const knownPeers = ref(new Set<string>())
 const room: Ref<Room | undefined> = ref(undefined)

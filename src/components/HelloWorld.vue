@@ -11,7 +11,7 @@ type Drink = DataPayload & {
 const config = { appId: 'https://brassbirminghammatchmaking-default-rtdb.europe-west1.firebasedatabase.app/' }
 let triggerSendingDrink = () => {}
 
-defineProps<{ msg: string }>()
+const props = defineProps<{ msg: string }>()
 
 const knownPeers = ref(new Set<string>())
 const room: Ref<Room | undefined> = ref(undefined)
@@ -41,6 +41,14 @@ function LeaveRoom() {
     room.value = undefined
 }
 
+function checkPeers() {
+    knownPeers.value.clear()
+    knownPeers.value.add(selfId)
+    let peers = room.value?.getPeers()
+    for(let prop in peers) 
+        knownPeers.value.add(prop)
+}
+
 </script>
 
 
@@ -57,6 +65,7 @@ function LeaveRoom() {
             <p>Your peer ID is {{ selfId }}</p>
             <p>Known peers : {{ Array.from(knownPeers.values()).join(', ') }}</p>
             <button type="button" @click="triggerSendingDrink()">Send Drinks</button>
+            <button type="button" @click="checkPeers">Check Peers</button>
         </div>
     </div>
 

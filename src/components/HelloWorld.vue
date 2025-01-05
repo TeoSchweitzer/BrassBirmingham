@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, type Ref } from 'vue'
-import { joinRoom, type Room } from 'trystero'
+import { joinRoom, type Room } from 'trystero/firebase'
 import { selfId, type DataPayload } from 'trystero'
 
 type Drink = DataPayload & {
@@ -8,7 +8,7 @@ type Drink = DataPayload & {
     withIce: boolean
 }
 
-const config = { appId: 'san_narciso_3d' }
+const config = { appId: 'https://brassbirminghammatchmaking-default-rtdb.europe-west1.firebasedatabase.app/' }
 let triggerSendingDrink = () => {}
 
 defineProps<{ msg: string }>()

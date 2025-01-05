@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, type Ref } from 'vue'
-import { joinRoom, type Room } from 'trystero/torrent'
+import { joinRoom, type Room } from 'trystero'
 import { selfId, type DataPayload } from 'trystero'
 
 type Drink = DataPayload & {

@@ -46,7 +46,12 @@ export default {
 async function fetchIceCredentials(env: Env) {
   try {
     const res = await fetch("https://rtc.live.cloudflare.com/v1/turn/keys/f9c1f8fafb2f096e0fa80c18e1a76ae6/credentials/generate-ice-servers", {
-      headers: { Authorization: `Bearer ${env.TURN_API_KEY}` },
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.TURN_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ttl: 900 }),
     });
     if (!res.ok) return null;
     return await res.json();

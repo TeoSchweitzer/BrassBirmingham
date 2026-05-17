@@ -12,31 +12,6 @@ let connection: DataConnection | null = null
 const iceServers = (window as any).__ICE_SERVERS__
   ?? await fetch("/api/ice").then(r => r.json());
 
-const unusedPeerOptionsConfigExample = {
-  config: {
-	"iceServers": [
-		{
-			"urls": [
-				"stun:stun.cloudflare.com:3478",
-				"stun:stun.cloudflare.com:53"
-			]
-		},
-		{
-			"urls": [
-				"turn:turn.cloudflare.com:3478?transport=udp",
-				"turn:turn.cloudflare.com:3478?transport=tcp",
-				"turns:turn.cloudflare.com:5349?transport=tcp",
-				"turn:turn.cloudflare.com:53?transport=udp",
-				"turn:turn.cloudflare.com:80?transport=tcp",
-				"turns:turn.cloudflare.com:443?transport=tcp"
-			],
-			"username": "g0366fe22b033d3c45c4ee102321bc7e7494744ddd4c4f6592c3b201b1568c97",
-			"credential": "d8761ac9e563c67e6ac5e20715b31dac9c706083de550835b1b4ad734c1b9d96"
-		}
-	]
-  },
-}
-
 function setupConnection(conn: DataConnection) {
   connection = conn
   connectionState.value = 'connected'

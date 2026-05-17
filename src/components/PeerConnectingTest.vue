@@ -9,7 +9,10 @@ const connectionState = ref('not connected')
 let peer: Peer | null = null
 let connection: DataConnection | null = null
 
-const peerOptions = {
+const iceServers = (window as any).__ICE_SERVERS__
+  ?? await fetch("/api/ice").then(r => r.json());
+
+const unusedPeerOptionsConfigExample = {
   config: {
 	"iceServers": [
 		{
@@ -64,7 +67,7 @@ function connectToPeer() {
 }
 
 onMounted(() => {
-  peer = new Peer(peerOptions)
+  peer = new Peer({config: iceServers})
 
   peer.on('open', (id) => {
     peerId.value = id

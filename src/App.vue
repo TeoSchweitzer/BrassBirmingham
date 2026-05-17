@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PeerConnectingTest from './components/PeerConnectingTest.vue'
-import TicTacToe from './components/TicTacToe.vue'
+import GameEngine from './components/GameEngine.vue'
 
-const currentTab = ref<'peer' | 'tictactoe'>('peer')
+const currentTab = ref<'peer' | 'gameengine'>('peer')
 </script>
 
 <template>
@@ -18,16 +18,16 @@ const currentTab = ref<'peer' | 'tictactoe'>('peer')
       </button>
       <button
         type="button"
-        :class="{ active: currentTab === 'tictactoe' }"
-        @click="currentTab = 'tictactoe'"
+        :class="{ active: currentTab === 'gameengine' }"
+        @click="currentTab = 'gameengine'"
       >
-        TicTacToe
+        GameEngine
       </button>
     </div>
 
     <div class="tab-panel">
       <PeerConnectingTest v-if="currentTab === 'peer'" />
-      <TicTacToe v-else />
+      <GameEngine v-else />
     </div>
   </div>
 </template>

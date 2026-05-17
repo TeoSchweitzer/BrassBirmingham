@@ -4,9 +4,12 @@ import { usePeerConnection } from '../utils/peerConnection'
 const {
   peerId,
   otherPeerId,
-  receivedMessage,
+  selectedPeerId,
+  peerList,
+  messageLog,
   connectionState,
   connectToPeer,
+  sendPing,
 } = usePeerConnection()
 </script>
 
@@ -26,13 +29,24 @@ const {
     </div>
 
     <div>
+      <label for="peer-select">Select peer:</label>
+      <select id="peer-select" v-model="selectedPeerId">
+        <option value="" disabled>Select a peer</option>
+        <option v-for="peer in peerList" :key="peer" :value="peer">
+          {{ peer }}
+        </option>
+      </select>
+      <button type="button" @click="sendPing">Ping</button>
+    </div>
+
+    <div>
       <p>Connection state: {{ connectionState }}</p>
-      <p>Received message:</p>
+      <p>Message log:</p>
       <textarea
         readonly
-        rows="4"
+        rows="6"
         cols="40"
-        :value="receivedMessage"
+        :value="messageLog"
       ></textarea>
     </div>
   </div>

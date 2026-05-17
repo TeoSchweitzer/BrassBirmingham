@@ -14,6 +14,39 @@ export function usePeerConnection() {
 
   let peer: Peer | null = null
   const connectionMap = new Map<string, DataConnection>()
+    const STORAGE_KEY = 'bb_peer_meta_v1'
+
+    type StoredMeta = {
+      ownedId?: string
+      peers?: string[]
+    }
+
+    function loadMeta(): StoredMeta | null {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return null
+        return JSON.parse(raw) as StoredMeta
+      } catch (e) {
+        console.warn('Failed to load peer meta from localStorage', e)
+        return null
+      }
+    }
+
+    function saveMeta(meta: StoredMeta) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(meta))
+      } catch (e) {
+        console.warn('Failed to save peer meta to localStorage', e)
+      }
+    }
+
+    function clearMeta() {
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch (e) {
+        console.warn('Failed to clear peer meta', e)
+      }
+    }
 
   const iceServersPromise = (window as any).__ICE_SERVERS__
     ? Promise.resolve((window as any).__ICE_SERVERS__)
@@ -34,6 +67,13 @@ export function usePeerConnection() {
     }
     if (!peerList.value.includes(trimmed)) {
       peerList.value.push(trimmed)
+      // persist discovered peers
+      const meta = loadMeta() || { peers: [] }
+      meta.peers = meta.peers || []
+      if (!meta.peers.includes(trimmed)) {
+        meta.peers.push(trimmed)
+        saveMeta(meta)
+      }
     }
   }
 
@@ -86,6 +126,14 @@ export function usePeerConnection() {
     addPeerIdToList(targetId)
     selectedPeerId.value = targetId
 
+      // persist requested peer
+      const meta = loadMeta() || { peers: [] }
+      meta.peers = meta.peers || []
+      if (!meta.peers.includes(targetId)) {
+        meta.peers.push(targetId)
+        saveMeta(meta)
+      }
+
     const existing = getConnectionForPeer(targetId)
     if (existing && existing.open) {
       messageLog.value = `Already connected to ${targetId}`
@@ -124,27 +172,111 @@ export function usePeerConnection() {
     } catch (error) {
       setError(error, targetId)
     }
+
+      // persist ping target
+      const meta = loadMeta() || { peers: [] }
+      meta.peers = meta.peers || []
+      if (!meta.peers.includes(targetId)) {
+        meta.peers.push(targetId)
+        saveMeta(meta)
+      }
   }
 
   onMounted(async () => {
     const config = await iceServersPromise
-    peer = new Peer({ config })
+    
 
-    peer.on('open', (id) => {
-      peerId.value = id
-    })
+      // attempt to reuse stored ownedId and peers
+      const stored = loadMeta()
 
-    peer.on('connection', (conn) => {
-      setupConnection(conn)
-      conn.on('open', () => {
-        const reply = `Hi back from ${peerId.value} !`
-        conn.send(reply)
-      })
-    })
+      async function createPeerWithOptionalId(ownedId?: string, allowFallback = true) {
+        try {
+          peer = ownedId ? new Peer(ownedId, { config }) : new Peer({ config })
+        } catch (err) {
+          // construction error (unlikely) -> fallback to new id
+          if (allowFallback) {
+            clearMeta()
+            return createPeerWithOptionalId(undefined, false)
+          }
+          setError(err)
+          return
+        }
 
-    peer.on('error', (error) => {
-      setError(error)
-    })
+        let attemptedOwnedId = ownedId
+
+        const onOpen = (id: string) => {
+          // if we asked for an id but didn't get it, assume reclaim failed
+          if (attemptedOwnedId && id !== attemptedOwnedId) {
+            // wipe local and restart without id
+            clearMeta()
+            // cleanup listeners and peer, then recreate
+            peer?.disconnect()
+            peer?.destroy()
+            peer = null
+            createPeerWithOptionalId(undefined, false)
+            return
+          }
+
+          peerId.value = id
+
+          // if we have stored peers, attempt to connect to them
+          const peersToConnect = stored?.peers || []
+          for (const remote of peersToConnect) {
+            try {
+              if (remote && remote !== peerId.value) {
+                const conn = peer!.connect(remote)
+                setupConnection(conn)
+              }
+            } catch (e) {
+              console.warn('Failed to connect to stored peer', remote, e)
+            }
+          }
+        }
+
+        const onConnection = (conn: DataConnection) => {
+          setupConnection(conn)
+          conn.on('open', () => {
+            const reply = `Hi back from ${peerId.value} !`
+            conn.send(reply)
+          })
+        }
+
+        const onError = (error: any) => {
+          // detect id taken / unavailable id errors
+          const msg = String(error && (error.type || error.message || error))
+          if (attemptedOwnedId && /unavailable-id|taken|in use|ID/.test(msg)) {
+            clearMeta()
+            peer?.disconnect()
+            peer?.destroy()
+            peer = null
+            createPeerWithOptionalId(undefined, false)
+            return
+          }
+          setError(error)
+        }
+
+        peer.on('open', onOpen)
+        peer.on('connection', onConnection)
+        peer.on('error', onError)
+
+        // if we successfully created with an ownedId, persist it
+        if (ownedId) {
+          saveMeta({ ownedId, peers: stored?.peers || [] })
+        } else if (!stored) {
+          // no stored meta existed; persist the newly assigned id
+          // open handler will set peerId and we can save then
+          peer.once('open', (id: string) => {
+            saveMeta({ ownedId: id, peers: [] })
+          })
+        }
+      }
+
+      // start
+      if (stored && stored.ownedId) {
+        await createPeerWithOptionalId(stored.ownedId)
+      } else {
+        await createPeerWithOptionalId(undefined)
+      }
   })
 
   return {

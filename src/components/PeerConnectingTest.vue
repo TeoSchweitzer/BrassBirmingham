@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import Peer, { DataConnection } from 'peerjs'
+import Peer from 'peerjs'
+import type { DataConnection } from 'peerjs'
 
 const peerId = ref('')
 const otherPeerId = ref('')
@@ -9,8 +10,17 @@ const connectionState = ref('not connected')
 let peer: Peer | null = null
 let connection: DataConnection | null = null
 
-const iceServers = (window as any).__ICE_SERVERS__
-  ?? await fetch("/api/ice").then(r => r.json());
+const iceServersPromise = (window as any).__ICE_SERVERS__
+  ? Promise.resolve((window as any).__ICE_SERVERS__)
+  : fetch("/api/ice")
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load ICE servers: ${r.status}`)
+        return r.json()
+      })
+      .catch((error) => {
+        console.warn(error)
+        return undefined
+      })
 
 function setupConnection(conn: DataConnection) {
   connection = conn
@@ -41,8 +51,9 @@ function connectToPeer() {
   setupConnection(conn)
 }
 
-onMounted(() => {
-  peer = new Peer({config: iceServers})
+onMounted(async () => {
+  const config = await iceServersPromise
+  peer = new Peer({ config })
 
   peer.on('open', (id) => {
     peerId.value = id

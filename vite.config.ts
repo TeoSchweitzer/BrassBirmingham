@@ -45,7 +45,7 @@ const iceInjectionPlugin: Plugin = {
     return [
       {
         tag: 'script',
-        injectTo: 'head' as const,
+        injectTo: 'head-prepend' as const,
         children: `window.__ICE_SERVERS__=${JSON.stringify(iceData)}`,
       },
     ]

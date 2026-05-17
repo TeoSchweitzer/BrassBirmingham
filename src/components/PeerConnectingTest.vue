@@ -14,7 +14,7 @@ const iceServersPromise = (window as any).__ICE_SERVERS__
   ? Promise.resolve((window as any).__ICE_SERVERS__)
   : fetch("/api/ice")
       .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load ICE servers: ${r.status}`)
+        if (!r.ok) throw new Error(`Failed to load the ICE servers: ${r.status}`)
         return r.json()
       })
       .catch((error) => {

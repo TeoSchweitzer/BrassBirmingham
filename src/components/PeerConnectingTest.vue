@@ -64,7 +64,7 @@ function connectToPeer() {
 }
 
 onMounted(() => {
-  peer = new Peer(undefined, peerOptions)
+  peer = new Peer(peerOptions)
 
   peer.on('open', (id) => {
     peerId.value = id
